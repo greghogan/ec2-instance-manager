@@ -1,0 +1,19 @@
+# Rust Quality Standards
+- **Formatting**: After every code change, you must run `cargo fmt`.
+- **Linting**: After formatting, run `cargo clippy --all-targets --all-features -- -D warnings`.
+- **Error Handling**: If Clippy identifies any issues or "suggestions," implement them immediately. 
+- **Strictness**: Treat Clippy warnings as build errors (the `-D warnings` flag ensures this). Do not consider a task "Done" until both commands pass with zero output.
+
+# Error Handling Rules
+- **Prohibit `unwrap()`**: Never use `.unwrap()` in production code.
+- **Preference for `?`**: Prefer propagating errors using the `?` operator. Use crates like `anyhow` (for binaries) or `thiserror` (for libraries) to manage error types.
+- **When to use `expect()`**: Only use `.expect("message")` when a failure indicates a fundamental logic error or an "impossible" state. The message must explain **why** it is safe to assume the value exists (e.g., `.expect("regex is statically valid")`).
+- **Pattern Matching**: Use `if let` or `match` for recoverable errors where the program should not crash.
+- **Clippy Enforcement**: Ensure the agent resolves all `clippy::unwrap_used` and `clippy::expect_used` warnings if they are enabled in the workspace.
+
+# Implementation Workflow
+1. Write/Modify code.
+2. Run `cargo fmt`.
+3. Run `cargo clippy`.
+4. If either fails, fix the code and repeat from step 2.
+5. Provide a summary of the changes once the environment is clean.
