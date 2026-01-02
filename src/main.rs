@@ -16,6 +16,10 @@ use mimalloc::MiMalloc;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, time::Duration};
 
+#[cfg(target_env = "musl")]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 // Validated that cleanup is necessary on error
 struct Tui {
     terminal: Terminal<CrosstermBackend<std::io::Stdout>>,

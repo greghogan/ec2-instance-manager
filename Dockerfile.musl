@@ -1,0 +1,41 @@
+# Alpine 3.23 ships with GCC 15, which fixes the memcmp bug flagged
+# by aws-lc-sys: # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95189
+FROM alpine:3.23
+
+# 1. Install build tools required by aws-lc-sys
+#    - cmake & perl: required for aws-lc-sys generation
+#    - build-base: contains gcc/g++ 12
+#    - bash & curl: required for rustup installer
+#    - linux-headers: required for compiling system crates
+RUN apk add --no-cache \
+    bash \
+    build-base \
+    cmake \
+    curl \
+    git \
+    linux-headers \
+    perl
+
+# 2. Configure Rust to install globally (not in /root)
+#    This is crucial for 'cross' which runs as a non-root user
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+
+# 3. Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+
+# 4. Add the Musl target
+RUN rustup target add x86_64-unknown-linux-musl
+
+# 5. Fix Permissions
+#    We manually create the registry folder so chmod doesn't fail.
+#    We make the toolchain world-readable so the 'cross' user can run it.
+RUN mkdir -p /usr/local/cargo/registry && \
+    chmod -R a+rx /usr/local/cargo /usr/local/rustup && \
+    chmod -R a+w /usr/local/cargo/registry
+
+# 6. Set Compiler Environment Variables
+ENV CC=gcc
+ENV CXX=g++
+ENV AR=gcc-ar
